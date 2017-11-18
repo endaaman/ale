@@ -2,17 +2,41 @@ class ClasspathPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.task('printClasspath') {
             doLast {
-                project
+                def pair = project
                     .rootProject
                     .allprojects
-                    .configurations
-                    .flatten()
-                    .findAll { it.name.endsWith('Classpath') }
-                    .collect { it.resolve() }
-                    .flatten()
-                    .unique()
-                    .findAll { it.exists() }
-                    .each { println it }
+                    .findResult {
+                        def a = it.getExtensions().findByName('android')
+                        a ? [a, it] : null
+                    }
+                if (pair) {
+                    def (android, targetProject) = pair
+                    def cp = [android.getBootClasspath()[0]]
+                    android.applicationVariants.all { v ->
+                        cp += v.getApkLibraries()
+                        new File("${targetProject.buildDir}/generated/source")
+                            .traverse([maxDepth: 0, type: groovy.io.FileType.DIRECTORIES]) {
+                                cp += "${it.getPath()}/${v.getName()}"
+                            }
+                    }
+                    cp += targetProject.configurations.provided
+                        .flatten()
+                        .unique()
+                        .findAll { it.exists() }
+                    cp.each { println it }
+                } else {
+                    project
+                        .rootProject
+                        .allprojects
+                        .configurations
+                        .flatten()
+                        .findAll { it.name.endsWith('Classpath') }
+                        .collect { it.resolve() }
+                        .flatten()
+                        .unique()
+                        .findAll { it.exists() }
+                        .each { println it }
+                }
             }
         }
     }
