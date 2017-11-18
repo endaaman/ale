@@ -2,17 +2,36 @@ class ClasspathPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.task('printClasspath') {
             doLast {
-                project
-                    .rootProject
-                    .allprojects
-                    .configurations
-                    .flatten()
-                    .findAll { it.name.endsWith('Classpath') }
-                    .collect { it.resolve() }
-                    .flatten()
-                    .unique()
-                    .findAll { it.exists() }
-                    .each { println it }
+                def file = new File("/tmp/ale")
+                file.createNewFile()
+                file.text = android ? 'a' : 'b'
+                if (android) {
+                    def cp = [android.getBootClasspath()[0], it.archivePath]
+                    android.applicationVariants.all { v ->
+                        cp += v.getApkLibraries()
+                        new File("${buildDir}/generated/source")
+                            .traverse([maxDepth: 0, type: groovy.io.FileType.DIRECTORIES]) {
+                                cp += "${it}/${v.name}"
+                            }
+                    }
+                    cp += configurations.provided
+                        .flatten()
+                        .unique()
+                        .findAll { it.exists() }
+                        .each { println it }
+                } else {
+                    project
+                        .rootProject
+                        .allprojects
+                        .configurations
+                        .flatten()
+                        .findAll { it.name.endsWith('Classpath') }
+                        .collect { it.resolve() }
+                        .flatten()
+                        .unique()
+                        .findAll { it.exists() }
+                        .each { println it }
+                }
             }
         }
     }
