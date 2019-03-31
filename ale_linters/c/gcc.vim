@@ -12,7 +12,7 @@ function! ale_linters#c#gcc#GetCommand(buffer, output) abort
     return '%e -S -x c -fsyntax-only'
     \   . ' -iquote ' . ale#Escape(fnamemodify(bufname(a:buffer), ':p:h'))
     \   . ale#Pad(l:cflags)
-    \   . ale#Pad(ale#Var(a:buffer, 'c_gcc_options')) . ' -'
+    \   . ale#Pad(ale#Var(a:buffer, 'c_gcc_options'))
 endfunction
 
 call ale#linter#Define('c', {
